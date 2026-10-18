@@ -104,19 +104,39 @@ La respuesta contiene la lista de productos creados:
 
 `POST /sales`
 
-El producto indicado en `product_id` debe existir:
+El carrito indicado en `cart_id` debe existir:
 
 ```json
 {
   "date": "2026-10-16",
   "time": "12:45",
-  "quantity": 5,
-  "product_id": 10
+  "cart_id": 10
 }
 ```
 
-El campo `total_price` se calcula automáticamente con el precio del producto
-multiplicado por la cantidad.
+La respuesta incluye `total_price`, pero ese valor no se guarda como atributo de
+`sales`. La API lo calcula al consultar la venta sumando, para cada producto del
+carrito, `product.price * cart_product.quantity`:
+
+```json
+{
+  "id": 1,
+  "date": "2026-10-16",
+  "time": "12:45:00",
+  "cart_id": 10,
+  "total_price": 12500
+}
+```
+
+Para agregar productos al carrito se utiliza `POST /cart_products`:
+
+```json
+{
+  "cart_id": 10,
+  "product_id": 3,
+  "quantity": 2
+}
+```
 
 ### Actualizar una venta
 
@@ -126,8 +146,7 @@ multiplicado por la cantidad.
 {
   "date": "2026-10-16",
   "time": "12:45",
-  "quantity": 5,
-  "product_id": 10
+  "cart_id": 10
 }
 ```
 
