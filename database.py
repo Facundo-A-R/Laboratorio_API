@@ -29,8 +29,10 @@ class Sales(Base):
         nullable=False,
         unique=True,
     )
+    client_id = Column(Integer, ForeignKey("clients.id"), nullable=True)
     
     cart = relationship("Carts", back_populates="sales")
+    client = relationship("Client", back_populates="sales")
 
 class Carts(Base):
     __tablename__ = "carts"
@@ -53,5 +55,20 @@ class Cart_Product(Base):
     cart = relationship("Carts", back_populates="cart_product")
     product = relationship("Products", back_populates="cart_product")
 
-Base.metadata.create_all(engine, Base.metadata.tables.values(), checkfirst=True)
 
+
+## ------ Para el examen ------
+
+class Client(Base):
+    __tablename__ = "clients"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), nullable=False)
+    email = Column(String(100), nullable=False, unique=True)
+    phone = Column(String(20), nullable=True)
+
+    sales = relationship("Sales", back_populates="client")
+
+
+
+Base.metadata.create_all(engine, Base.metadata.tables.values(), checkfirst=True)

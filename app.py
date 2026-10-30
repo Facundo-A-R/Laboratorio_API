@@ -1,6 +1,7 @@
 from fastapi import FastAPI, status, HTTPException
-from database import db_session, Products, Sales, Carts, Cart_Product
-from schema import ProductCreate, SaleCreate, SaleResponse, ProductResponse, CartCreate, CartProductCreate, CartProductResponse
+from sqlalchemy.exc import IntegrityError
+from database import Client, db_session, Products, Sales, Carts, Cart_Product
+from schema import ProductCreate, SaleCreate, SaleResponse, ProductResponse, CartCreate, CartProductCreate, CartProductAdd, CartProductResponse, ClientCreate
 
 app = FastAPI()
 
@@ -165,6 +166,7 @@ def sale_response(sale: Sales) -> dict:
         "date": sale.date,
         "time": sale.time,
         "cart_id": sale.cart_id,
+        "client_id": sale.client_id,
         "total_price": total_price,
     }
 
@@ -204,27 +206,43 @@ async def get_sale(sale_id):
 async def create_sale(sale_data: SaleCreate):
     try:
         cart = Carts.query.get(sale_data.cart_id)
+        client = Client.query.get(sale_data.client_id) if sale_data.client_id else None
 
         if not cart:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cart not found")
         if cart.state == 'cerrado':
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot create sale for a closed cart")
+        if Sales.query.filter_by(cart_id=cart.id).first():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Cart is already associated with a sale"
+            )
 
         sale = Sales(
             date=sale_data.date,
             time=sale_data.time,
-            cart_id=sale_data.cart_id
+            client_id=client.id if client else None,
+            cart_id=cart.id
         )
 
+        cart.state = 'cerrado'
         db_session.add(sale)
         db_session.commit()
         db_session.refresh(sale)
+        db_session.refresh(cart)
 
         return sale_response(sale)
     
     except HTTPException:
         raise
+    except IntegrityError:
+        db_session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cart is already associated with a sale"
+        )
     except Exception as e:
+        db_session.rollback()
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An error occurred while trying to create sale: {e}")   
      
 # primero debe desvincularse mediante POST /ventas/{id}/carrito, y su estado debe permanecer "cerrado".
@@ -375,7 +393,7 @@ async def create_cart(cart_data: CartCreate):
 
 # agregar un producto a un carrito
 @app.post("/cart/{cart_id}/product", status_code=status.HTTP_200_OK)
-async def add_product_to_cart(cart_id, product_data: CartProductCreate):
+async def add_product_to_cart(cart_id: int, product_data: CartProductAdd):
     try:
         cart = Carts.query.get(cart_id)
         product = Products.query.get(product_data.product_id)
@@ -399,8 +417,9 @@ async def add_product_to_cart(cart_id, product_data: CartProductCreate):
         if cart_product:
             cart_product.quantity += product_data.quantity
         else:
+
             cart_product = Cart_Product(
-                cart_id=cart_id,
+                cart_id=cart.id,
                 product_id=product_data.product_id,
                 quantity=product_data.quantity
             )
@@ -504,7 +523,7 @@ async def remove_product_from_cart(cart_id, product_id):
 # *************************************** Cart_Product ******************************************************
 
 # get todos los cart_products
-@app.get("/carts_products", status_code=status.HTTP_200_OK)
+@app.get("/carts_products", status_code=status.HTTP_200_OK, response_model=list[CartProductResponse])
 async def get_cart_products():
     try:
         cart_products = Cart_Product.query.all()
@@ -611,4 +630,96 @@ async def delete_cart_product(cart_product_id):
         raise
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An error occurred while trying to delete cart product with id {cart_product_id}: {e}")
+
+
+## ------ Para el examen ------
+
+@app.get("/clients", status_code=status.HTTP_200_OK)
+async def get_clients():
+    try:
+        clients = Client.query.all()
+
+        if not clients:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Clients not found")
         
+        return clients
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An error occurred while trying to get clients: {e}")
+    
+@app.get("/client/{client_id}", status_code=status.HTTP_200_OK)
+async def get_client(client_id):
+    try:
+        client = Client.query.get(client_id)
+
+        if not client:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
+        
+        return client
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An error occurred while trying to get client with id {client_id}: {e}")
+
+@app.post("/client", status_code=status.HTTP_201_CREATED)
+async def create_client(client_data: ClientCreate):
+    try:
+        client = Client(
+            name=client_data.name,
+            email=client_data.email,
+            phone=client_data.phone
+        )
+
+        db_session.add(client)
+        db_session.commit()
+        db_session.refresh(client)
+
+        return client
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An error occurred while trying to create client: {e}")
+
+@app.put("/client/{client_id}", status_code=status.HTTP_200_OK)
+async def update_client(client_id, client_data: ClientCreate):
+    try:
+        client = Client.query.get(client_id)
+
+        if not client:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
+
+        client.name = client_data.name or client.name
+        client.email = client_data.email or client.email
+        client.phone = client_data.phone or client.phone
+
+        db_session.commit()
+        db_session.refresh(client)
+
+        return client
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An error occurred while trying to update client with id {client_id}: {e}")
+
+@app.delete("/client/{client_id}", status_code=status.HTTP_200_OK)
+async def delete_client(client_id):
+    try:
+        client = Client.query.get(client_id)
+
+        if not client:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
+
+        db_session.delete(client)
+        db_session.commit()
+
+        return {"message": "Client deleted successfully", "client": client}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An error occurred while trying to delete client with id {client_id}: {e}")

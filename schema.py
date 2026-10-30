@@ -23,6 +23,7 @@ class SaleCreate(BaseModel):
     date: date
     time: time
     cart_id: int
+    client_id: int
 
     class Config:
         from_attributes = True
@@ -33,6 +34,7 @@ class SaleResponse(BaseModel):
     date: date
     time: time
     cart_id: int
+    client_id: int
     total_price: float
 
     class Config:
@@ -61,6 +63,15 @@ class CartProductCreate(BaseModel):
     class Config:
         from_attributes = True
 
+
+class CartProductAdd(BaseModel):
+    product_id: int
+    quantity: int
+
+    class Config:
+        from_attributes = True
+
+
 class CartProductResponse(BaseModel):
     id: int
     cart_id: int
@@ -69,3 +80,24 @@ class CartProductResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+## ------ Para el examen -------
+
+class ClientCreate(BaseModel):
+    name: str
+    email: str
+    phone: str
+
+    class Config:
+        from_attributes = True
+
+class ClientResponse(BaseModel):
+    id: int
+    name: str
+    email: str
+    phone: str
+
+    class Config:
+        from_attributes = True
+
+        
