@@ -89,6 +89,8 @@ una venta, el carrito se cierra y el total de la venta se calcula sumando
 
 ### Productos
 
+![Productos](/screenshots/products.png/)
+
 | Método | Ruta | Descripción |
 | --- | --- | --- |
 | `GET` | `/products` | Lista todos los productos. |
