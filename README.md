@@ -9,7 +9,7 @@ La aplicación administra:
 - productos;
 - carritos y los productos incluidos en cada carrito;
 - ventas asociadas a un carrito;
-- clientes asociados opcionalmente a una venta.
+- clientes asociados a una venta.
 
 ## Requisitos
 
@@ -42,6 +42,12 @@ La API queda disponible en `http://127.0.0.1:8000`.
 
 La base de datos SQLite se encuentra en `database.db`. Al importar
 `database.py`, SQLAlchemy crea las tablas que todavía no existan.
+
+Para iniciar la API indicando host y puerto explícitamente:
+
+```powershell
+python -m uvicorn app:app --host 0.0.0.0 --port 8000
+```
 
 ### Documentación interactiva
 
@@ -86,6 +92,8 @@ una venta, el carrito se cierra y el total de la venta se calcula sumando
 | Método | Ruta | Descripción |
 | --- | --- | --- |
 | `GET` | `/products` | Lista todos los productos. |
+| `GET` | `/products/filter/name` | Filtra productos por nombre, con paginación. |
+| `GET` | `/products/filter/price` | Filtra productos por rango de precio, con paginación. |
 | `GET` | `/product/{product_id}` | Obtiene un producto por ID. |
 | `POST` | `/product` | Crea un producto. |
 | `POST` | `/products` | Crea varios productos. |
@@ -121,11 +129,21 @@ Crear varios productos requiere un arreglo JSON:
 ]
 ```
 
+Filtros de productos:
+
+```text
+GET /products/filter/name?name=mouse&page=1&limit=10
+GET /products/filter/price?min_price=1000&max_price=10000&page=1&limit=10
+```
+
+Los filtros devuelven `page`, `limit`, `total_results` y `products`.
+
 ### Ventas
 
 | Método | Ruta | Descripción |
 | --- | --- | --- |
 | `GET` | `/sales` | Lista todas las ventas. |
+| `GET` | `/sales/filter/date` | Filtra ventas por fecha inicial y/o final, con paginación. |
 | `GET` | `/sales/{sale_id}` | Obtiene una venta por ID. |
 | `POST` | `/sale` | Registra una venta y cierra su carrito. |
 | `POST` | `/sales/{sale_id}/cart` | Asocia un carrito a una venta existente. |
@@ -162,7 +180,17 @@ La respuesta incluye el total calculado:
 ```
 
 El carrito indicado debe existir, estar abierto y no estar asociado a otra
-venta. El cliente debe existir cuando se informa `client_id`.
+venta. El cliente indicado debe existir. El campo `client_id` forma parte del
+cuerpo requerido por el esquema actual.
+
+Filtro de ventas por fecha:
+
+```text
+GET /sales/filter/date?date_start=2026-01-01&date_finish=2026-12-31&page=1&limit=5
+```
+
+Los parámetros `date_start` y `date_finish` son opcionales. La respuesta
+incluye `page`, `limit`, `total_results` y `sales`.
 
 ### Carritos
 
@@ -245,6 +273,22 @@ Crear un cliente:
 ```
 
 El correo electrónico debe ser único.
+
+## Flujo recomendado
+
+1. Crear los productos con `POST /product` o `POST /products`.
+2. Crear un carrito abierto con `POST /cart`.
+3. Agregar productos con `POST /cart/{cart_id}/product`.
+4. Crear el cliente con `POST /client`.
+5. Registrar la venta con `POST /sale`. Esto cierra el carrito.
+
+Una vez asociado a una venta, un carrito no puede modificarse ni eliminarse.
+
+## Formato de fechas y horas
+
+- Las fechas usan el formato ISO `YYYY-MM-DD`, por ejemplo `2026-10-30`.
+- Las horas usan el formato `HH:MM` o `HH:MM:SS`, por ejemplo `12:45`.
+- Los precios se expresan como números, sin símbolo de moneda.
 
 ## Respuestas y errores
 

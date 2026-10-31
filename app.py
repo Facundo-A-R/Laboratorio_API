@@ -1,7 +1,9 @@
-from fastapi import FastAPI, status, HTTPException
+from fastapi import FastAPI, status, HTTPException, Query
 from sqlalchemy.exc import IntegrityError
 from database import Client, db_session, Products, Sales, Carts, Cart_Product
 from schema import ProductCreate, SaleCreate, SaleResponse, ProductResponse, CartCreate, CartProductCreate, CartProductAdd, CartProductResponse, ClientCreate
+from typing import Optional 
+from datetime import date 
 
 app = FastAPI()
 
@@ -26,6 +28,77 @@ async def get_product():
         raise
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An error occurred while trying to get products: {e}")    
+
+@app.get("/products/filter/name", status_code=status.HTTP_200_OK)
+async def filter_products_by_name( 
+    # Query(None, description="Nombre del producto a filtrar") recibe 2 parametros. el primero .. es el valor por defecto, y el segundo es la descripción que se mostrará en la documentación de la API. En este caso, el valor por defecto es None, lo que significa que si no se proporciona un valor para el parámetro name, se considerará como no especificado. La descripción indica que este parámetro se utiliza para filtrar los productos por su nombre.
+    name: str | None = Query(None, description="Nombre del producto a filtrar"),
+    page: int = Query(1, description="Número de página"),
+    limit: int =  Query(10, description="Número de página")
+    ):
+
+    try:
+        query_name = Products.query
+
+        if name is not None:
+            query_name = query_name.filter(Products.name.ilike(f"%{name}%"))
+        if not query_name:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No products found with the specified name")
+
+        offset_value = (page - 1) * limit
+        products = query_name.order_by(Products.name.asc()).limit(limit).offset(offset_value).all()
+
+        return {
+            "page": page,
+            "limit": limit,
+            "total_results": len(products),
+            "products": products
+            }
+    except HTTPException:
+        raise   
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An error occurred while trying to filter products by name: {e}")
+    
+@app.get("/products/filter/price", status_code=status.HTTP_200_OK)
+async def filter_products_by_price(
+    min_price: Optional[float] = Query(None, description="Precio mínimo"),
+    max_price: Optional[float] = Query(None, description="Precio máximo"),
+    page: int = 1,
+    limit: int = 10
+    ):
+
+    try:
+        query_price = Products.query
+
+        if min_price is not None:
+            query_price = query_price.filter(Products.price >= min_price)
+        if max_price is not None:
+            query_price = query_price.filter(Products.price <= max_price)
+
+        if not query_price:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No products found within the specified price range")
+
+
+# offset_value hace que la paginación funcione correctamente, ya que calcula el número de registros que se deben omitir en función de la página actual y el límite de resultados por página. Esto permite que la consulta devuelva solo los registros correspondientes a la página solicitada, en lugar de devolver todos los registros filtrados.
+# Ejemplo: Si limit=10 y page=2, offset_value = (2 - 1) * 10 = 10. Esto significa que la consulta omitirá los primeros 10 registros y devolverá los siguientes 10 registros, que corresponden a la página 2.
+        offset_value = (page - 1) * limit
+        products = query_price.order_by(Products.name.asc()).limit(limit).offset(offset_value).all()
+
+        return {
+            "page": page,
+            "limit": limit,
+            "total_results": len(products),
+            "products": products
+            }
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail=f"Error al filtrar los productos: {e}"
+        )
 
 
 @app.get("/product/{product_id}", status_code=status.HTTP_200_OK)
@@ -184,6 +257,46 @@ async def get_sales():
         raise
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An error occurred while trying to get sales: {e}")    
+
+# get filter date
+@app.get("/sales/filter/date", status_code=status.HTTP_200_OK)
+async def get_sale_filter_date (
+        date_start: date | None = Query(None, description="Fecha Minina de la venta a filtrar"),
+        date_finish: date | None = Query(None, description= "Fecha Maxima de la venta a filtrar"),
+        page: int = 1,
+        limit: int = 5
+):
+    try:
+        query_date = Sales.query
+
+        if date_start is not None and date_finish is not None:
+            # between incluye los valores de date_start y date_finish, es decir, si la fecha de la venta es igual a date_start o date_finish, también se incluirá en los resultados.
+            query_date = query_date.filter(Sales.date.between(date_start, date_finish))
+        else:
+            if date_start is not None:
+                query_date = query_date.filter(Sales.date >= date_start)
+            if date_finish is not None:
+                query_date = query_date.filter(Sales.date <= date_finish)
+
+
+        if not query_date:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No sales found within the specified date range")
+
+        # productos a ignorar en la paginacion
+        offset_value = (page - 1) * limit
+        sales = query_date.order_by(Sales.date.asc()).limit(limit).offset(offset_value).all()
+
+        return {
+            "page": page,
+            "limit": limit,
+            "total_results": len(sales),
+            "sales": [sale_response(sale) for sale in sales]
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An error occurred while trying to filter sales by date: {e}")
 
 # get una venta por id
 @app.get("/sales/{sale_id}", status_code=status.HTTP_200_OK)
