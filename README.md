@@ -56,6 +56,8 @@ FastAPI genera automáticamente:
 - Swagger UI: `http://127.0.0.1:8000/docs`
 - ReDoc: `http://127.0.0.1:8000/redoc`
 
+## Endpoints
+
 También existe un endpoint de bienvenida:
 
 ```http
@@ -85,11 +87,9 @@ una venta, el carrito se cierra y el total de la venta se calcula sumando
 `price * quantity` de sus productos; el total no se almacena en la tabla
 `sales`.
 
-## Endpoints
+## Productos
 
-### Productos
-
-![Productos](/screenshots/products.png/)
+![Panel de gestión de productos con una tabla de productos y controles para listarlos, consultarlos, crearlos, actualizarlos y eliminarlos; la pantalla forma parte de la documentación técnica de la API](/screenshots/products.png/)
 
 | Método | Ruta | Descripción |
 | --- | --- | --- |
@@ -140,7 +140,9 @@ GET /products/filter/price?min_price=1000&max_price=10000&page=1&limit=10
 
 Los filtros devuelven `page`, `limit`, `total_results` y `products`.
 
-### Ventas
+## Ventas
+
+![Panel de gestión de ventas con una tabla de ventas y controles para listarlas, consultarlas, registrarlas, actualizarlas y eliminarlas; la pantalla forma parte de la documentación técnica de la API](/screenshots/sales.png/)
 
 | Método | Ruta | Descripción |
 | --- | --- | --- |
@@ -196,6 +198,8 @@ incluye `page`, `limit`, `total_results` y `sales`.
 
 ### Carritos
 
+![Panel de gestión de carritos con opciones para listar, consultar, crear, actualizar y eliminar carritos, además de agregar o quitar productos; la pantalla forma parte del entorno de documentación técnica de la API]( /screenshots/carts)
+
 | Método | Ruta | Descripción |
 | --- | --- | --- |
 | `GET` | `/carts` | Lista todos los carritos. |
@@ -229,6 +233,8 @@ debe ser mayor que cero.
 
 ### Productos de carritos
 
+![Panel de administración de relaciones entre carritos y productos con opciones para listar, consultar, crear, actualizar y eliminar registros de cart_product; la pantalla forma parte de la documentación técnica de la API](/screenshots/carts_products)
+
 Estos endpoints permiten consultar y administrar directamente los registros
 de la tabla intermedia `cart_product`:
 
@@ -255,6 +261,8 @@ Para la operación habitual de agregar productos se recomienda usar
 existencia del producto y la cantidad.
 
 ### Clientes
+
+![Panel de gestión de clientes con opciones para listar, consultar, crear, actualizar y eliminar clientes; la pantalla forma parte de la documentación técnica de la API](/screenshots/clients)
 
 | Método | Ruta | Descripción |
 | --- | --- | --- |
