@@ -198,7 +198,7 @@ incluye `page`, `limit`, `total_results` y `sales`.
 
 ### Carritos
 
-![Panel de gestión de carritos con opciones para listar, consultar, crear, actualizar y eliminar carritos, además de agregar o quitar productos; la pantalla forma parte del entorno de documentación técnica de la API]( /screenshots/carts)
+![Panel de gestión de carritos con opciones para listar, consultar, crear, actualizar y eliminar carritos, además de agregar o quitar productos; la pantalla forma parte del entorno de documentación técnica de la API](/screenshots/carts/)
 
 | Método | Ruta | Descripción |
 | --- | --- | --- |
@@ -233,7 +233,7 @@ debe ser mayor que cero.
 
 ### Productos de carritos
 
-![Panel de administración de relaciones entre carritos y productos con opciones para listar, consultar, crear, actualizar y eliminar registros de cart_product; la pantalla forma parte de la documentación técnica de la API](/screenshots/carts_products)
+![Panel de administración de relaciones entre carritos y productos con opciones para listar, consultar, crear, actualizar y eliminar registros de cart_product; la pantalla forma parte de la documentación técnica de la API](/screenshots/carts_products/)
 
 Estos endpoints permiten consultar y administrar directamente los registros
 de la tabla intermedia `cart_product`:
@@ -262,7 +262,7 @@ existencia del producto y la cantidad.
 
 ### Clientes
 
-![Panel de gestión de clientes con opciones para listar, consultar, crear, actualizar y eliminar clientes; la pantalla forma parte de la documentación técnica de la API](/screenshots/clients)
+![Panel de gestión de clientes con opciones para listar, consultar, crear, actualizar y eliminar clientes; la pantalla forma parte de la documentación técnica de la API](/screenshots/clients/)
 
 | Método | Ruta | Descripción |
 | --- | --- | --- |
